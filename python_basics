@@ -1,0 +1,259 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+REPO_URL="https://github.com/Siva77554/python-basics.git"
+WORKDIR="python-basics"
+
+# Clone (will fail if folder already exists)
+if [ -d "$WORKDIR" ]; then
+  echo "Directory $WORKDIR already exists. Please remove or choose another directory."
+  exit 1
+fi
+
+git clone "$REPO_URL"
+cd "$WORKDIR"
+
+# Create folders
+mkdir -p examples/variables-and-functions examples/data-types examples/conditional-statements examples/lists tests .github/workflows
+
+# Root README
+cat > README.md <<'EOF'
+# Python Basics
+
+A consolidated collection of beginner Python scenario programs demonstrating variables, data types, conditionals, and lists.
+
+## Included examples
+- variables-and-functions
+- data-types
+- conditional-statements
+- lists
+
+## Run an example
+python examples/variables-and-functions/dog_years.py
+
+## Run tests
+pytest -q
+EOF
+
+# Example: variables-and-functions
+cat > examples/variables-and-functions/README.md <<'EOF'
+# variables-and-functions
+
+Simple function examples that illustrate variables, parameters, return values and printing.
+
+## Files
+- `dog_years.py` — converts human years to dog years and prints the result.
+
+## Run
+python dog_years.py
+EOF
+
+cat > examples/variables-and-functions/dog_years.py <<'EOF'
+def calculate_dog_years(human_age):
+    """
+    Function to convert human years to dog years.
+    Using the classic rule of thumb: 1 human year = 7 dog years.
+    """
+    dog_years_multiplier = 7
+    total_dog_age = human_age * dog_years_multiplier
+    return total_dog_age
+
+
+if __name__ == "__main__":
+    my_human_age = 3
+    calculated_age = calculate_dog_years(my_human_age)
+    print("Human Age:", my_human_age)
+    print("Equivalent Dog Age:", calculated_age)
+EOF
+
+# Example: data-types
+cat > examples/data-types/README.md <<'EOF'
+# data-types
+
+Demo of Python basic data types and a cafe bill example.
+
+## Files
+- `cafe_bill.py` — calculates and prints bill details.
+
+## Run
+python cafe_bill.py
+EOF
+
+cat > examples/data-types/cafe_bill.py <<'EOF'
+def total_bill(quantity, price_per_item):
+    customer_name = "Kyle"
+    item_name = "Bubble tea"
+    quantity = 3
+    price_per_item = 218.465
+
+    bill = quantity * price_per_item
+
+    print(type(customer_name))
+    print(type(item_name))
+    print(type(quantity))
+    print(type(price_per_item))
+
+    print(customer_name)
+    print(item_name)
+    print(quantity)
+    print(price_per_item)
+
+    print("Customer:", customer_name)
+    print("Item:", item_name)
+    print("Total to pay: $", round(bill, 2))
+
+
+if __name__ == "__main__":
+    total_bill(3, 218.465)
+EOF
+
+# Example: conditional-statements
+cat > examples/conditional-statements/README.md <<'EOF'
+# conditional-statements
+
+A small example demonstrating conditional logic for delivery fees.
+
+## Files
+- `delivery_cafe_bill.py` — adds a delivery fee when applicable and returns the final bill.
+
+## Run
+python delivery_cafe_bill.py
+EOF
+
+cat > examples/conditional-statements/delivery_cafe_bill.py <<'EOF'
+def cafe_bill(total_bill, delivery_bill):
+    if total_bill >= 50.00:
+        print("You qualify for free delivery")
+    else:
+        print("Adding a $5.00 delivery fee")
+        total_bill = total_bill + delivery_bill
+    return total_bill
+
+
+if __name__ == "__main__":
+    final_amount = cafe_bill(42.50, 5.00)
+    print("Final amount to pay: $", final_amount)
+EOF
+
+# Example: lists
+cat > examples/lists/README.md <<'EOF'
+# lists
+
+Simple demo of Python list operations.
+
+## Files
+- `list_cafe.py` — manipulates a shopping cart list and prints details.
+
+## Run
+python list_cafe.py
+EOF
+
+cat > examples/lists/list_cafe.py <<'EOF'
+def process_cart():
+    cart = ["Espresso", "Croissant", "Muffin", "Bubble Tea"]
+    cart.append("Iced Latte")
+    cart.remove("Muffin")
+    print("Current Order:", cart)
+    print("Total items ordered:", len(cart))
+    print("First item Ordered:", cart[0])
+    print("Latest item added:", cart[-1])
+    return cart
+
+
+if __name__ == "__main__":
+    process_cart()
+EOF
+
+# .gitignore
+cat > .gitignore <<'EOF'
+__pycache__/
+*.pyc
+.venv/
+EOF
+
+# requirements
+cat > requirements.txt <<'EOF'
+pytest
+EOF
+
+# Simple CI workflow
+cat > .github/workflows/ci.yml <<'EOF'
+name: CI
+
+on: [push, pull_request]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: [3.10]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+      - name: Run tests
+        run: |
+          pytest -q
+EOF
+
+# Tests (use sys.path to import from examples)
+cat > tests/test_variables.py <<'PY'
+import sys, os
+sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'examples', 'variables-and-functions'))
+from dog_years import calculate_dog_years
+
+def test_calculate_dog_years():
+    assert calculate_dog_years(3) == 21
+PY
+
+cat > tests/test_datatypes.py <<'PY'
+import sys, os
+sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'examples', 'data-types'))
+from cafe_bill import total_bill
+
+def test_total_bill_runs():
+    # function prints output and returns None
+    assert total_bill(1, 10) is None
+PY
+
+cat > tests/test_conditionals.py <<'PY'
+import sys, os
+sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'examples', 'conditional-statements'))
+from delivery_cafe_bill import cafe_bill
+
+def test_cafe_bill_free_delivery():
+    assert cafe_bill(60.0, 5.0) == 60.0
+
+def test_cafe_bill_with_delivery():
+    assert cafe_bill(40.0, 5.0) == 45.0
+PY
+
+cat > tests/test_lists.py <<'PY'
+import sys, os
+sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'examples', 'lists'))
+from list_cafe import process_cart
+
+def test_process_cart_length():
+    cart = process_cart()
+    assert len(cart) == 4
+    assert cart[0] == "Espresso"
+    assert cart[-1] == "Iced Latte"
+PY
+
+# Add and commit
+git add .
+git commit -m "Add consolidated python basics examples, READMEs, tests, and CI"
+echo "About to push to origin/main. Make sure you have push access and authentication configured."
+git push origin main
+
+echo "Done. To run tests locally:"
+echo "  python -m venv .venv && source .venv/bin/activate  # (Windows use .venv\\Scripts\\activate)"
+echo "  pip install -r requirements.txt"
+echo "  pytest -q"
